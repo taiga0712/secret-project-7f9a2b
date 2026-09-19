@@ -277,7 +277,7 @@
     <div class="row"><span class="label">右スイッチ</span><span id="ledRight">--</span></div>
     <div class="actions">
       <button type="button" data-led="AUTO">自動</button>
-      <button type="button" data-led="HALLOWEEN">ハロウィン</button>
+      <button type="button" id="seasonalLedBtn" data-led="HALLOWEEN">ハロウィン</button>
       <button type="button" data-led="LEFT">左ウインカー</button>
       <button type="button" data-led="RIGHT">右ウインカー</button>
       <button type="button" class="danger" data-led="OFF">消灯</button>
@@ -326,6 +326,17 @@
   <script type="module">
     import { RelayServer } from "https://chirimen.org/remote-connection/js/beta/RelayServer.js";
 
+    // --- テーマ設定の対応マップ ---
+    const themeLedMap = {
+      halloween: { label: "ハロウィン", command: "HALLOWEEN" },
+      hanami:    { label: "花見",       command: "HANAMI" },
+      hanabi:    { label: "花火",       command: "HANABI" },
+      christmas: { label: "クリスマス", command: "CHRISTMAS" },
+      newyear:   { label: "正月",       command: "NEWYEAR" }
+    };
+
+    const seasonalLedBtn = document.getElementById("seasonalLedBtn");
+
     // --- テーマ変更処理 ---
     const savedTheme = localStorage.getItem("selectedTheme") || "halloween";
     setTheme(savedTheme);
@@ -333,9 +344,16 @@
     function setTheme(theme) {
       document.body.setAttribute("data-theme", theme);
       localStorage.setItem("selectedTheme", theme);
+      
+      // テーマ選択ボタンの active 切り替え
       document.querySelectorAll("[data-set-theme]").forEach((btn) => {
         btn.classList.toggle("active", btn.dataset.setTheme === theme);
       });
+
+      // LEDボタンのテキストとコマンド(data-led)を連動変更
+      const themeConfig = themeLedMap[theme] || themeLedMap["halloween"];
+      seasonalLedBtn.textContent = themeConfig.label;
+      seasonalLedBtn.dataset.led = themeConfig.command;
     }
 
     const modalOverlay = document.getElementById("modalOverlay");
@@ -456,11 +474,15 @@
         channel.send({ type: "fan", command: button.dataset.fan });
       });
     });
-    document.querySelectorAll("[data-led]").forEach((button) => {
-      button.addEventListener("click", () => {
-        channel.send({ type: "led", command: button.dataset.led });
-      });
+
+    // イベント委譲（dynamicなコマンド値にも対応できるようdocument全体で処理）
+    document.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-led]");
+      if (btn) {
+        channel.send({ type: "led", command: btn.dataset.led });
+      }
     });
+
     document.querySelectorAll("[data-track]").forEach((button) => {
       button.addEventListener("click", () => {
         channel.send({
