@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CHIRIMEN リモート操作</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      /* ハロウィン: かぼちゃ(pumpkin) / 深紫(purple) / 毒々しい緑(slime) / 血(blood) */
+      --pumpkin: #ff7f11;
+      --pumpkin-dark: #d35400;
+      --purple: #6c3483;
+      --purple-deep: #1b0f2e;
+      --slime: #7cfc00;
+      --blood: #b3123a;
+      --bg-top: #150a24;
+      --bg-bottom: #0d0716;
+      --card: #241435;
+      --card-border: #4b2a63;
+      --text: #f5eaff;
+      --muted: #b39ddb;
+      --accent: var(--pumpkin);
+      --ok: var(--slime);
+      --off: var(--blood);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Hiragino Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-top);
+      color: var(--text);
+      padding: 20px 16px 32px;
+      max-width: 480px;
+      margin-inline: auto;
+      min-height: 100vh;
+    }
+    h1 {
+      font-size: 1.3rem;
+      margin: 0 0 4px;
+      color: var(--pumpkin);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    h1::before {
+      content: "🎃";
+    }
+    .subtitle {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin: 0 0 16px;
+    }
+    .status {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+    .status.ok { color: var(--ok); }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-left: 3px solid var(--pumpkin);
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+    }
+    .row {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      margin: 6px 0;
+      font-size: 0.95rem;
+    }
+    .label { color: var(--muted); }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    button {
+      appearance: none;
+      border: 0;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      background: var(--accent);
+      color: white;
+      flex: 1 1 30%;
+      min-height: 44px;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      box-shadow: 0 2px 0 rgba(0, 0, 0, 0.12);
+      transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.08);
+      box-shadow: 0 6px 12px rgba(42, 63, 107, 0.25);
+    }
+    button:active {
+      transform: translateY(0) scale(0.97);
+      filter: brightness(0.92);
+      box-shadow: 0 1px 0 rgba(0, 0, 0, 0.12);
+    }
+    button.secondary { background: var(--muted); }
+    button.danger { background: var(--off); }
+  </style>
+</head>
+<body>
+  <h1>CHIRIMEN リモート</h1>
+  <p class="subtitle">OKAYAMA IoT CONTROL PANEL</p>
+  <div id="connection" class="status">接続中...</div>
+
+  <section class="card">
+    <div class="row"><span class="label">温度</span><span id="temperature">--</span></div>
+    <div class="row"><span class="label">湿度</span><span id="humidity">--</span></div>
+    <div class="row"><span class="label">ファン</span><span id="fan">--</span></div>
+    <div class="actions">
+      <button type="button" data-fan="AUTO">自動</button>
+      <button type="button" data-fan="ON">ON</button>
+      <button type="button" class="danger" data-fan="OFF">OFF</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="row"><span class="label">LED</span><span id="led">--</span></div>
+    <div class="row"><span class="label">左スイッチ</span><span id="ledLeft">--</span></div>
+    <div class="row"><span class="label">右スイッチ</span><span id="ledRight">--</span></div>
+    <div class="actions">
+      <button type="button" data-led="AUTO">自動</button>
+      <button type="button" data-led="HALLOWEEN">ハロウィン</button>
+      <button type="button" data-led="LEFT">左ウインカー</button>
+      <button type="button" data-led="RIGHT">右ウインカー</button>
+      <button type="button" class="danger" data-led="OFF">消灯</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="row"><span class="label">照度</span><span id="lux">--</span></div>
+    <div class="row"><span class="label">ロック</span><span id="lock">--</span></div>
+    <div class="row"><span class="label">センサー</span><span id="sensor">--</span></div>
+    <div class="row"><span class="label">サーボ</span><span id="servo">--</span></div>
+    <div class="actions">
+      <button type="button" data-lock="UNLOCK">UNLOCK</button>
+      <button type="button" class="secondary" data-lock="LOCK">LOCK</button>
+      <button type="button" data-servo="RUN">サーボを動かす</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="row"><span class="label">最後の曲</span><span id="music">--</span></div>
+    <div class="actions">
+      <button type="button" data-track="1">1</button>
+      <button type="button" data-track="2">2</button>
+      <button type="button" data-track="3">3</button>
+      <button type="button" data-track="4">4</button>
+      <button type="button" data-track="5">5</button>
+      <button type="button" data-track="6">6</button>
+    </div>
+  </section>
+
+  <script type="module">
+    import { RelayServer } from "https://chirimen.org/remote-connection/js/beta/RelayServer.js";
+
+    const CHANNEL_NAME = "webiotmakers2026-team-a";
+    const connectionEl = document.getElementById("connection");
+    const temperatureEl = document.getElementById("temperature");
+    const humidityEl = document.getElementById("humidity");
+    const fanEl = document.getElementById("fan");
+    const ledEl = document.getElementById("led");
+    const ledLeftEl = document.getElementById("ledLeft");
+    const ledRightEl = document.getElementById("ledRight");
+    const luxEl = document.getElementById("lux");
+    const lockEl = document.getElementById("lock");
+    const sensorEl = document.getElementById("sensor");
+    const servoEl = document.getElementById("servo");
+    const musicEl = document.getElementById("music");
+
+    function fmtNum(value, digits, unit) {
+      if (value == null || Number.isNaN(Number(value))) return "--";
+      return `${Number(value).toFixed(digits)}${unit}`;
+    }
+
+    function ledLabel(led) {
+      return `${led.effect} / ${led.mode}`;
+    }
+
+    function applyLed(led) {
+      ledEl.textContent = ledLabel(led);
+      ledLeftEl.textContent = led.left ? "ON" : "OFF";
+      ledRightEl.textContent = led.right ? "ON" : "OFF";
+    }
+
+    function applyStatus(payload) {
+      if (payload.climate) {
+        temperatureEl.textContent = fmtNum(payload.climate.temperature, 2, "℃");
+        humidityEl.textContent = fmtNum(payload.climate.humidity, 2, "%");
+      }
+      if (payload.fan) {
+        fanEl.textContent = `${payload.fan.on ? "ON" : "OFF"} / ${payload.fan.mode}`;
+      }
+      if (payload.led) applyLed(payload.led);
+      if (payload.music) {
+        musicEl.textContent = payload.music.lastTrack ?? "--";
+      }
+      if (payload.lock) lockEl.textContent = payload.lock;
+      if (payload.sensor) sensorEl.textContent = payload.sensor;
+      if (payload.lux != null) luxEl.textContent = fmtNum(payload.lux, 3, " lx");
+      if (payload.servo) {
+        servoEl.textContent = `${payload.servo.state} / ${payload.servo.kind} (${payload.servo.count}回)`;
+      }
+    }
+
+    function handleMessage({ data }) {
+      const payload = typeof data === "string" ? JSON.parse(data) : data;
+      if (!payload || typeof payload !== "object") return;
+
+      switch (payload.type) {
+        case "status":
+          applyStatus(payload);
+          break;
+        case "climate":
+          temperatureEl.textContent = fmtNum(payload.temperature, 2, "℃");
+          humidityEl.textContent = fmtNum(payload.humidity, 2, "%");
+          break;
+        case "fan":
+          fanEl.textContent = `${payload.on ? "ON" : "OFF"} / ${payload.mode}`;
+          break;
+        case "led":
+          applyLed(payload);
+          break;
+        case "music":
+          musicEl.textContent = payload.lastTrack ?? "--";
+          break;
+        case "lock":
+          lockEl.textContent = payload.state;
+          break;
+        case "sensor":
+          sensorEl.textContent = payload.state;
+          break;
+        case "lux":
+          luxEl.textContent = fmtNum(payload.value, 3, " lx");
+          break;
+        case "servo":
+          servoEl.textContent = `${payload.state} / ${payload.kind} (${payload.count}回)`;
+          break;
+        default:
+          break;
+      }
+    }
+
+    const relay = RelayServer("chirimentest", "chirimenSocket");
+    const channel = await relay.subscribe(CHANNEL_NAME);
+    connectionEl.textContent = "接続済み";
+    connectionEl.classList.add("ok");
+    channel.onmessage = handleMessage;
+    channel.send({ type: "sync" });
+
+    document.querySelectorAll("[data-fan]").forEach((button) => {
+      button.addEventListener("click", () => {
+        channel.send({ type: "fan", command: button.dataset.fan });
+      });
+    });
+    document.querySelectorAll("[data-led]").forEach((button) => {
+      button.addEventListener("click", () => {
+        channel.send({ type: "led", command: button.dataset.led });
+      });
+    });
+    document.querySelectorAll("[data-track]").forEach((button) => {
+      button.addEventListener("click", () => {
+        channel.send({
+          type: "music",
+          command: "PLAY",
+          track: Number(button.dataset.track),
+        });
+      });
+    });
+    document.querySelectorAll("[data-lock]").forEach((button) => {
+      button.addEventListener("click", () => {
+        channel.send({ type: "lock", state: button.dataset.lock });
+      });
+    });
+    document.querySelector("[data-servo]").addEventListener("click", () => {
+      channel.send({ type: "servo", command: "RUN" });
+    });
+  </script>
+</body>
+</html>
